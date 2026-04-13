@@ -1,0 +1,6 @@
+@Core.SaaS.Inventory.API_HostAddress = http://localhost:5286
+
+GET {{Core.SaaS.Inventory.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

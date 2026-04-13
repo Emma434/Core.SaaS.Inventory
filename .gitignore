@@ -1,0 +1,22 @@
+## Visual Studio 2022/2026
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.userosscache
+*.sln.docstates
+
+## User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Roslyn cache directories
+.vs/
+
+## Others
+Debug/
+Release/
+x64/
+x86/
