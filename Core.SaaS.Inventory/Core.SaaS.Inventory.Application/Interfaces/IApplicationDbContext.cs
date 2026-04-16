@@ -13,5 +13,6 @@ namespace Core.SaaS.Inventory.Application.Interfaces
         DbSet<Tenant> Tenants { get; set; }
         DbSet<Product> Products { get; set; }
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
+        DbSet<ProductMovement> ProductMovements { get; set; }
     }
 }

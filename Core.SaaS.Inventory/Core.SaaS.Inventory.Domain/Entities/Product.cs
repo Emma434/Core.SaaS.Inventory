@@ -13,7 +13,12 @@ namespace Core.SaaS.Inventory.Domain.Entities
         public string Name { get; private set; }
         public string SKU { get; private set; }
         public decimal Price { get; private set; }
+        //el stock ya no se puede cambiar desde afuera
         public int Stock { get; private set; }
+
+        // Lista inmutable de movimientos
+        private readonly List<ProductMovement> _movements = new();
+        public IReadOnlyCollection<ProductMovement> Movements => _movements.AsReadOnly();
 
         private Product() { }
 
@@ -33,21 +38,22 @@ namespace Core.SaaS.Inventory.Domain.Entities
             Stock = 0;
             CreatedAt = DateTime.UtcNow;
         }
-
-        public void AddStock(int quantity)
+        // --- LÓGICA DE NEGOCIO ---
+        public void AddStock(int quantity, string reason)
         {
-            if (quantity <= 0) throw new ArgumentException("La cantidad debe ser mayor a cero.");
+            if (quantity <= 0) throw new ArgumentException("La cantidad debe ser positiva.");
+
             Stock += quantity;
-            UpdatedAt = DateTime.UtcNow;
+            _movements.Add(new ProductMovement(TenantId, Id, MovementType.In, quantity, reason));
         }
 
-        public void RemoveStock(int quantity)
+        public void RemoveStock(int quantity, string reason)
         {
-            if (quantity <= 0) throw new ArgumentException("La cantidad debe ser mayor a cero.");
-            if (Stock - quantity < 0) throw new InvalidOperationException("Stock insuficiente.");
+            if (quantity <= 0) throw new ArgumentException("La cantidad debe ser positiva.");
+            if (Stock < quantity) throw new InvalidOperationException("Stock insuficiente para esta operación.");
 
             Stock -= quantity;
-            UpdatedAt = DateTime.UtcNow;
+            _movements.Add(new ProductMovement(TenantId, Id, MovementType.Out, quantity, reason));
         }
     }
 }

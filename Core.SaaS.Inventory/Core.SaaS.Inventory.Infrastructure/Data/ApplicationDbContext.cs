@@ -36,30 +36,32 @@ namespace Core.SaaS.Inventory.Infrastructure.Data
 
         public DbSet<Tenant> Tenants { get; set; }
         public DbSet<Product> Products { get; set; }
+        public DbSet<ProductMovement> ProductMovements { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Fluent API: Mantenemos el Dominio limpio de atributos de base de datos
-            modelBuilder.Entity<Tenant>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.SubscriptionPlan).IsRequired().HasMaxLength(50);
-            });
+            // 1. Filtros Globales de Multi-tenancy
+            modelBuilder.Entity<Tenant>().HasQueryFilter(e => e.Id == _currentTenantId);
+            modelBuilder.Entity<Product>().HasQueryFilter(e => e.TenantId == _currentTenantId);
+            modelBuilder.Entity<ProductMovement>().HasQueryFilter(e => e.TenantId == _currentTenantId);
 
-            modelBuilder.Entity<Product>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.SKU).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Price).HasColumnType("decimal(18,2)");
+            // 2. Mapeo explícito de la relación 1 a Muchos y la lista privada
+            modelBuilder.Entity<Product>()
+                .HasMany(p => p.Movements)
+                .WithOne()
+                .HasForeignKey(m => m.ProductId);
 
-                // EL CORAZÓN DEL SaaS: Filtro Global de Consultas
-                // Todo SELECT, UPDATE o DELETE de Product tendrá un "WHERE TenantId = _currentTenantId" automático
-                entity.HasQueryFilter(e => e.TenantId == _currentTenantId);
-            });
+            modelBuilder.Entity<Product>()
+                .Navigation(p => p.Movements)
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            // 3. LA CURA AL ERROR DE CONCURRENCIA
+            // Obligamos a EF Core a aceptar nuestros Guids generados en el Dominio como INSERTS nuevos.
+            modelBuilder.Entity<ProductMovement>()
+                .Property(m => m.Id)
+                .ValueGeneratedNever();
         }
     }
 }
